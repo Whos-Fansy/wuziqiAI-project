@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五子棋AI博弈系统</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --panel-bg: #16213e;
+            --card-bg: #0f3460;
+            --text: #ecf0f1;
+            --text-secondary: #bdc3c7;
+            --gold: #f1c40f;
+            --green: #2ecc71;
+            --red: #e74c3c;
+            --blue: #3498db;
+            --blue-hover: #2980b9;
+            --purple: #9b59b6;
+            --orange: #e67e22;
+            --border: #2c3e50;
+            --accent: #e94560;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+            -webkit-user-select: none;
+            background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a1a 100%);
+        }
+        .view { display: none; animation: fadeSlideIn 0.4s ease-out; }
+        .view.active { display: flex; }
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        @keyframes pulse2 { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        #mainMenu { flex-direction: column; align-items: center; gap: 40px; }
+        .menu-header { text-align: center; }
+        .menu-header .logo-icon { font-size: 80px; animation: float 3s ease-in-out infinite; display: block; }
+        .menu-header h1 { font-size: 48px; font-weight: bold; background: linear-gradient(135deg, #f1c40f, #e94560); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-top: 10px; letter-spacing: 4px; }
+        .menu-header .subtitle { font-size: 16px; color: var(--text-secondary); margin-top: 8px; letter-spacing: 2px; }
+        .menu-buttons { display: flex; flex-direction: column; gap: 16px; width: 320px; }
+        .menu-btn { padding: 16px 32px; border: 2px solid transparent; border-radius: 14px; font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; font-family: inherit; letter-spacing: 2px; position: relative; overflow: hidden; text-align: center; }
+        .menu-btn::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); transition: left 0.5s; }
+        .menu-btn:hover::before { left: 100%; }
+        .menu-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.4); }
+        .menu-btn:active { transform: translateY(-1px); }
+        .btn-ai { background: linear-gradient(135deg, #3498db, #2980b9); color: #fff; border-color: rgba(52,152,219,0.5); }
+        .btn-ai:hover { box-shadow: 0 8px 30px rgba(52,152,219,0.4); }
+        .btn-rules { background: linear-gradient(135deg, #9b59b6, #8e44ad); color: #fff; border-color: rgba(155,89,182,0.5); }
+        .btn-rules:hover { box-shadow: 0 8px 30px rgba(155,89,182,0.4); }
+        .btn-stats { background: linear-gradient(135deg, #e67e22, #d35400); color: #fff; border-color: rgba(230,126,34,0.5); }
+        .btn-stats:hover { box-shadow: 0 8px 30px rgba(230,126,34,0.4); }
+        .btn-quit { background: linear-gradient(135deg, #e74c3c, #c0392b); color: #fff; border-color: rgba(231,76,60,0.5); }
+        .btn-quit:hover { box-shadow: 0 8px 30px rgba(231,76,60,0.4); }
+        .btn-skin { background: linear-gradient(135deg, #2ecc71, #27ae60); color: #fff; border-color: rgba(46,204,113,0.5); }
+        .btn-skin:hover { box-shadow: 0 8px 30px rgba(46,204,113,0.4); }
+        .menu-footer { font-size: 12px; color: var(--text-secondary); opacity: 0.6; }
+
+        #difficultyMenu, #firstMoveView, #rulesView, #skinView, #statsView { flex-direction: column; align-items: center; gap: 30px; }
+        .diff-header, .firstmove-header, .skin-header { text-align: center; }
+        .diff-header h2, .firstmove-header h2, .skin-header h2 { font-size: 36px; color: var(--gold); margin-bottom: 8px; }
+        .diff-header p, .firstmove-header p, .skin-header p { color: var(--text-secondary); font-size: 14px; }
+        .diff-buttons, .firstmove-buttons { display: flex; flex-direction: column; gap: 14px; width: 320px; }
+        .diff-btn { padding: 18px 32px; border: none; border-radius: 14px; font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; font-family: inherit; letter-spacing: 2px; display: flex; align-items: center; justify-content: space-between; }
+        .diff-btn:hover, .firstmove-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.4); }
+        .diff-btn .diff-icon { font-size: 28px; }
+        .diff-btn .diff-info { text-align: right; }
+        .diff-btn .diff-desc { font-size: 11px; opacity: 0.7; margin-top: 2px; }
+        .btn-easy { background: linear-gradient(135deg, #2ecc71, #27ae60); color: #fff; }
+        .btn-easy:hover { box-shadow: 0 8px 30px rgba(46,204,113,0.4); }
+        .btn-medium { background: linear-gradient(135deg, #f39c12, #e67e22); color: #fff; }
+        .btn-medium:hover { box-shadow: 0 8px 30px rgba(243,156,18,0.4); }
+        .btn-hard { background: linear-gradient(135deg, #e74c3c, #c0392b); color: #fff; }
+        .btn-hard:hover { box-shadow: 0 8px 30px rgba(231,76,60,0.4); }
+        .firstmove-btn { padding: 18px 32px; border: none; border-radius: 14px; font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; font-family: inherit; letter-spacing: 2px; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #3498db, #2980b9); color: #fff; }
+        .firstmove-btn .fm-icon { font-size: 28px; }
+        .firstmove-btn .fm-desc { font-size: 12px; opacity: 0.7; }
+        .btn-back { background: transparent; border: 2px solid var(--border); color: var(--text-secondary); padding: 12px 24px; border-radius: 10px; font-size: 14px; cursor: pointer; transition: all 0.3s; font-family: inherit; }
+        .btn-back:hover { border-color: var(--text); color: var(--text); transform: translateY(-2px); }
+
+        #gameView { gap: 30px; padding: 20px; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+        .board-section { background: var(--panel-bg); border-radius: 16px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+        .board-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .board-title { font-size: 18px; font-weight: bold; }
+        .turn-indicator { padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; transition: all 0.3s; }
+        .turn-indicator.player { background: #111; color: #fff; border: 2px solid #666; }
+        .turn-indicator.ai { background: #fff; color: #333; border: 2px solid #ccc; }
+        .turn-indicator.thinking { animation: pulse2 1s infinite; }
+        canvas { display: block; border-radius: 8px; cursor: pointer; }
+        canvas.no-interact { cursor: not-allowed; }
+        .board-actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+        .board-hints { margin-top: 10px; font-size: 12px; color: var(--text-secondary); text-align: center; }
+        .board-hints kbd { background: #2c3e50; padding: 2px 8px; border-radius: 4px; border: 1px solid #4a6785; font-size: 11px; }
+
+        button, .btn { padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.2s; font-family: inherit; white-space: nowrap; }
+        button:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        button:active { transform: translateY(0); }
+        .btn-primary { background: var(--blue); color: #fff; }
+        .btn-primary:hover { background: var(--blue-hover); }
+        .btn-success { background: var(--green); color: #fff; }
+        .btn-success:hover { background: #27ae60; }
+        .btn-danger { background: var(--red); color: #fff; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-gold { background: var(--gold); color: #333; }
+        .btn-gold:hover { background: #d4ac0d; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .sidebar { background: var(--panel-bg); border-radius: 16px; padding: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); min-width: 280px; max-width: 320px; }
+        .sidebar h2 { font-size: 20px; margin-bottom: 16px; color: var(--gold); text-align: center; }
+        .sidebar-section { margin-bottom: 20px; }
+        .sidebar-section h3 { font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .score-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .score-table th, .score-table td { padding: 8px 10px; text-align: center; border-bottom: 1px solid var(--border); }
+        .score-table th { color: var(--gold); font-size: 12px; }
+        .score-positive { color: var(--green); font-weight: bold; }
+        .score-negative { color: var(--red); font-weight: bold; }
+        .score-zero { color: var(--text-secondary); }
+        .win-rate { font-size: 12px; color: var(--text-secondary); }
+        .difficulty-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .difficulty-badge.easy { background: var(--green); color: #fff; }
+        .difficulty-badge.medium { background: var(--gold); color: #333; }
+        .difficulty-badge.hard { background: var(--red); color: #fff; }
+        .streak-info { display: flex; gap: 20px; justify-content: center; margin: 8px 0; }
+        .streak-item { text-align: center; }
+        .streak-value { font-size: 28px; font-weight: bold; color: var(--gold); }
+        .streak-label { font-size: 11px; color: var(--text-secondary); }
+
+        .rules-card { background: var(--panel-bg); border-radius: 16px; padding: 36px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); max-width: 520px; width: 90%; }
+        .rules-card h2 { font-size: 30px; color: var(--gold); text-align: center; margin-bottom: 20px; }
+        .rules-card .rule-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+        .rules-card .rule-item:last-child { border-bottom: none; }
+        .rules-card .rule-num { background: var(--accent); color: #fff; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0; }
+        .rules-card .rule-text { line-height: 1.6; font-size: 15px; }
+        .rules-card .rule-text strong { color: var(--gold); }
+
+        .skin-grid { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; }
+        .skin-btn { width: 90px; height: 90px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: all 0.3s ease; position: relative; outline: none; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+        .skin-btn:hover { transform: scale(1.15); box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
+        .skin-btn.selected { border-color: var(--gold); box-shadow: 0 0 0 4px rgba(241,196,15,0.4), 0 6px 20px rgba(0,0,0,0.4); }
+        .skin-btn .skin-label { position: absolute; bottom: -28px; font-size: 13px; color: var(--text-secondary); white-space: nowrap; font-weight: bold; }
+        .skin-btn.selected .skin-label { color: var(--gold); }
+        .skin-preview { margin-top: 10px; display: flex; gap: 20px; align-items: center; font-size: 14px; color: var(--text-secondary); }
+        .skin-preview-dot { width: 24px; height: 24px; border-radius: 50%; display: inline-block; box-shadow: 0 2px 6px rgba(0,0,0,0.5); }
+
+        .stats-card { background: var(--panel-bg); border-radius: 16px; padding: 36px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); width: min(90vw, 85vh); max-width: 90vw; max-height: 88vh; overflow-y: auto; }
+        .stats-card h2 { font-size: 30px; color: var(--gold); text-align: center; margin-bottom: 20px; }
+
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 100; animation: fadeIn 0.3s; }
+        .dialog { background: var(--panel-bg); border-radius: 16px; padding: 32px; text-align: center; max-width: 420px; width: 90%; box-shadow: 0 16px 48px rgba(0,0,0,0.5); animation: slideUp 0.3s; }
+        .dialog h2 { font-size: 24px; margin-bottom: 16px; }
+        .dialog p { margin-bottom: 12px; color: var(--text-secondary); }
+        .dialog .result-icon { font-size: 48px; margin-bottom: 12px; }
+        .dialog-actions { display: flex; gap: 12px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+        .history-list { max-height: 200px; overflow-y: auto; font-size: 13px; text-align: left; margin-top: 8px; }
+        .history-list .history-item { padding: 4px 0; border-bottom: 1px solid var(--border); }
+        .history-item.result-胜 { color: var(--green); }
+        .history-item.result-负 { color: var(--red); }
+        .history-item.result-平 { color: var(--gold); }
+        hr.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+        @media (max-width: 768px) {
+            #gameView { flex-direction: column; align-items: center; }
+            .sidebar { max-width: 100%; width: 100%; }
+            .menu-header h1 { font-size: 32px; }
+            .menu-buttons, .diff-buttons, .firstmove-buttons { width: 90%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="view active" id="mainMenu">
+        <div class="menu-header">
+            <span class="logo-icon">♟️</span>
+            <h1>五子棋AI界面</h1>
+            <div class="subtitle">Minimax + Alpha-Beta 剪枝算法</div>
+        </div>
+        <div class="menu-buttons">
+            <button class="menu-btn btn-ai" onclick="showDifficultyMenu()">🤖 AI智能对战</button>
+            <button class="menu-btn btn-rules" onclick="showRules()">📖 规则说明</button>
+            <button class="menu-btn btn-stats" onclick="showStats()">📊 战绩统计</button>
+            <button class="menu-btn btn-skin" onclick="showSkinMenu()">🎨 选择皮肤</button>
+            <button class="menu-btn btn-quit" onclick="quitGame()">🚪 退出游戏</button>
+        </div>
+        <div class="menu-footer">v3.0 · 12×12 棋盘</div>
+    </div>
+
+    <div class="view" id="difficultyMenu">
+        <div class="diff-header">
+            <h2>⚔️ 选择对战难度</h2>
+            <p>选择适合你的难度</p>
+        </div>
+        <div class="diff-buttons">
+            <button class="diff-btn btn-easy" onclick="selectFirstMove(2)"><span><span class="diff-icon">🌱</span><span>简单模式</span></span><span class="diff-info"><div class="diff-desc">搜索深度 2 层</div><div class="diff-desc">适合新手入门</div></span></button>
+            <button class="diff-btn btn-medium" onclick="selectFirstMove(3)"><span><span class="diff-icon">⚡</span><span>一般模式</span></span><span class="diff-info"><div class="diff-desc">搜索深度 3 层</div><div class="diff-desc">有一定挑战性</div></span></button>
+            <button class="diff-btn btn-hard" onclick="selectFirstMove(4)"><span><span class="diff-icon">🔥</span><span>困难模式</span></span><span class="diff-info"><div class="diff-desc">搜索深度 4 层</div><div class="diff-desc">高手过招</div></span></button>
+        </div>
+        <button class="btn-back" onclick="showMainMenu()">← 返回主菜单</button>
+    </div>
+
+    <div class="view" id="firstMoveView">
+        <div class="firstmove-header">
+            <h2>🎯 选择先后手</h2>
+            <p id="firstmoveDiffLabel">难度：一般模式</p>
+        </div>
+        <div class="firstmove-buttons">
+            <button class="firstmove-btn" style="justify-content:center;" onclick="startGame(STATE.difficulty, true)">玩家先行</button>
+            <button class="firstmove-btn" style="background:linear-gradient(135deg,#9b59b6,#8e44ad);justify-content:center;" onclick="startGame(STATE.difficulty, false)">AI先行</button>
+        </div>
+        <button class="btn-back" onclick="showDifficultyMenu()">← 返回难度选择</button>
+    </div>
+
+    <div class="view" id="gameView">
+        <div class="board-section">
+            <div class="board-header">
+                <span class="board-title" id="gameDiffLabel">五子棋对局 - 一般模式</span>
+                <span id="turnIndicator" class="turn-indicator player">⚫ 玩家回合</span>
+            </div>
+            <canvas id="boardCanvas"></canvas>
+            <div class="board-actions">
+                <button class="btn-primary" id="btnNewGame">🔄 新游戏</button>
+                <button class="btn-gold" id="btnUndo" disabled>↩ 悔棋</button>
+                <button class="btn-primary" id="btnBackToMenu">🏠 返回菜单</button>
+            </div>
+            <div class="board-hints">快捷键: <kbd>Z</kbd> 悔棋 &nbsp; <kbd>R</kbd> 重新开始 &nbsp; <kbd>Esc</kbd> 返回</div>
+        </div>
+        <div class="sidebar">
+            <h2>📊 战绩面板</h2>
+            <div class="sidebar-section"><h3>当前难度</h3><span id="currentDiffBadge" class="difficulty-badge medium">一般</span></div>
+            <div class="sidebar-section"><h3>连胜纪录</h3><div class="streak-info"><div class="streak-item"><div class="streak-value" id="streakCurrent">0</div><div class="streak-label">当前连胜</div></div><div class="streak-item"><div class="streak-value" id="streakBest">0</div><div class="streak-label">最长连胜</div></div></div></div>
+            <div class="sidebar-section"><h3>积分统计</h3><table class="score-table"><thead><tr><th>难度</th><th>积分</th><th>胜/负/平</th><th>胜率</th></tr></thead><tbody id="scoreTableBody"><tr><td colspan="4" style="color:var(--text-secondary);">加载中...</td></tr></tbody></table></div>
+            <div class="sidebar-section"><h3>最近对局</h3><div class="history-list" id="historyList"><span style="color:var(--text-secondary);">暂无记录</span></div></div>
+            <button class="btn-danger" id="btnClearScores" style="width:100%;margin-top:8px;">🗑 清空战绩</button>
+        </div>
+    </div>
+
+    <div class="view" id="rulesView">
+        <div class="rules-card">
+            <h2>📖 游戏规则</h2>
+            <div class="rule-item"><span class="rule-num">1</span><span class="rule-text">游戏使用 <strong>12×12</strong> 路棋盘，<strong>黑子先手</strong>，白子后手。</span></div>
+            <div class="rule-item"><span class="rule-num">2</span><span class="rule-text">玩家与 AI 轮流在网格的<strong>交叉点</strong>上落子。</span></div>
+            <div class="rule-item"><span class="rule-num">3</span><span class="rule-text">任何一方在<strong>横、竖、斜</strong>任意方向上，率先形成连续的<strong>五个同色棋子</strong>即获胜。</span></div>
+            <div class="rule-item"><span class="rule-num">4</span><span class="rule-text">当棋盘落满且无人达成五连时，判定为<strong>平局</strong>。</span></div>
+            <div class="rule-item"><span class="rule-num">5</span><span class="rule-text">按 <strong>Z 键</strong>悔棋，按 <strong>R 键</strong>重新开始，按 <strong>Esc</strong> 返回主菜单。</span></div>
+            <div class="rule-item"><span class="rule-num">6</span><span class="rule-text">AI 采用<strong>极大极小值算法 + Alpha-Beta剪枝</strong>，难度越高思考越深。</span></div>
+        </div>
+        <button class="btn-back" onclick="showMainMenu()">← 返回主菜单</button>
+    </div>
+
+    <div class="view" id="skinView">
+        <div class="skin-header"><h2>🎨 选择棋子皮肤</h2><p>选择你喜欢的棋子颜色款式</p></div>
+        <div class="skin-grid">
+            <button class="skin-btn selected" id="skinBlack" onclick="selectSkin('black')" style="background:radial-gradient(circle at 35% 35%, #555, #0a0a0a);"><span class="skin-label">⚫ 黑色</span></button>
+            <button class="skin-btn" id="skinRed" onclick="selectSkin('red')" style="background:radial-gradient(circle at 35% 35%, #f06060, #b01818);"><span class="skin-label">🔴 红色</span></button>
+            <button class="skin-btn" id="skinBlue" onclick="selectSkin('blue')" style="background:radial-gradient(circle at 35% 35%, #5090f0, #1428a0);"><span class="skin-label">🔵 蓝色</span></button>
+            <button class="skin-btn" id="skinYellow" onclick="selectSkin('yellow')" style="background:radial-gradient(circle at 35% 35%, #f5e050, #b09018);"><span class="skin-label">🟡 黄色</span></button>
+        </div>
+        <div class="skin-preview"><span>你的棋子：</span><span class="skin-preview-dot" id="skinPreviewDot" style="background:#0a0a0a;"></span><span style="margin-left:12px;">AI棋子：</span><span class="skin-preview-dot" style="background:#f5f5f5;"></span><span>纯白色</span></div>
+        <button class="btn-back" onclick="showMainMenu()">← 返回主菜单</button>
+    </div>
+
+    <div class="view" id="statsView">
+        <div class="stats-card">
+            <h2>📊 战绩统计</h2>
+            <div class="sidebar-section"><h3>连胜纪录</h3><div class="streak-info"><div class="streak-item"><div class="streak-value" id="statsStreakCurrent">0</div><div class="streak-label">当前连胜</div></div><div class="streak-item"><div class="streak-value" id="statsStreakBest">0</div><div class="streak-label">最长连胜</div></div></div></div>
+            <div class="sidebar-section"><h3>各难度积分</h3><table class="score-table"><thead><tr><th>难度</th><th>积分</th><th>胜/负/平</th><th>胜率</th></tr></thead><tbody id="statsScoreTableBody"><tr><td colspan="4" style="color:var(--text-secondary);">加载中...</td></tr></tbody></table></div>
+            <div class="sidebar-section"><h3>最近对局</h3><div class="history-list" id="statsHistoryList"><span style="color:var(--text-secondary);">暂无记录</span></div></div>
+            <button class="btn-danger" id="btnClearScores2" style="width:100%;margin-top:8px;">🗑 清空战绩</button>
+        </div>
+        <button class="btn-back" onclick="showMainMenu()">← 返回主菜单</button>
+    </div>
+
+    <div class="overlay" id="gameOverOverlay" style="display:none;"><div class="dialog" id="gameOverDialog"></div></div>
+
+    <div class="overlay" id="boardPreviewOverlay" style="display:none;">
+        <div class="dialog" style="max-width:600px;">
+            <h3 style="color:var(--gold);margin-bottom:16px;">🔍 最终棋盘状态</h3>
+            <canvas id="previewCanvas" style="border-radius:8px;display:block;margin:0 auto;"></canvas>
+            <div class="dialog-actions" style="margin-top:16px;"><button class="btn-primary" id="btnBackToResult">↩ 返回</button></div>
+        </div>
+    </div>
+
+    <script>
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            if (viewId === 'gameView') loadScores();
+            if (viewId === 'statsView') loadStatsPage();
+        }
+        function showMainMenu() { if (STATE.hasGame && !STATE.gameOver) gameOverOverlay.style.display = 'none'; showView('mainMenu'); }
+        function showDifficultyMenu() { showView('difficultyMenu'); }
+        function showRules() { showView('rulesView'); }
+        function showStats() { showView('statsView'); }
+        function showSkinMenu() { showView('skinView'); }
+        function selectFirstMove(difficulty) {
+            STATE.difficulty = difficulty;
+            const m = { 2: '简单', 3: '一般', 4: '困难' };
+            document.getElementById('firstmoveDiffLabel').textContent = '难度：' + (m[difficulty] || '一般') + '模式';
+            showView('firstMoveView');
+        }
+
+        const SKIN_COLORS = { 'black': [10,10,10], 'red': [220,30,30], 'blue': [30,80,220], 'yellow': [220,180,20] };
+        const SKIN_HIGHLIGHTS = { 'black': 'rgba(80,80,80,0.4)', 'red': 'rgba(255,255,255,0.5)', 'blue': 'rgba(255,255,255,0.5)', 'yellow': 'rgba(255,255,255,0.5)' };
+
+        function selectSkin(skinName) {
+            STATE.playerStoneColor = SKIN_COLORS[skinName] || [10,10,10];
+            STATE.playerSkin = skinName;
+            document.querySelectorAll('.skin-btn').forEach(b => b.classList.remove('selected'));
+            const btn = document.getElementById('skin' + skinName.charAt(0).toUpperCase() + skinName.slice(1));
+            if (btn) btn.classList.add('selected');
+            const dot = document.getElementById('skinPreviewDot');
+            if (dot) dot.style.background = rgbStr(STATE.playerStoneColor);
+            if (STATE.hasGame) drawBoard();
+        }
+
+        async function startGame(difficulty, playerFirst = true) {
+            STATE.difficulty = difficulty;
+            STATE.playerFirst = playerFirst;
+            showView('gameView');
+            await newGame(difficulty, playerFirst);
+            loadScores();
+            const m = { 2: '简单', 3: '一般', 4: '困难' }, mc = { 2: 'easy', 3: 'medium', 4: 'hard' };
+            const t = m[difficulty] || '一般', c = mc[difficulty] || 'medium';
+            document.getElementById('gameDiffLabel').textContent = `五子棋对局 - ${t}模式 · ${playerFirst?'玩家先行':'AI先行'}`;
+            document.getElementById('currentDiffBadge').textContent = t;
+            document.getElementById('currentDiffBadge').className = `difficulty-badge ${c}`;
+        }
+
+        function quitGame() {
+            if (window.close && window.opener) { window.close(); }
+            else { document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#ecf0f1;font-size:24px;font-family:\'Microsoft YaHei\',sans-serif;text-align:center;"><div>👋 感谢游玩！<br><span style="font-size:16px;color:#bdc3c7;">请手动关闭浏览器标签页</span></div></div>'; }
+        }
+
+        const STATE = {
+            board: null, size: 12, currentPlayer: 1, difficulty: 3, gameOver: false, winningLine: [], lastMove: null,
+            aiThinking: false, hasGame: false, cellSize: 60, margin: 50, animStone: null, animProgress: 0, animStartTime: 0,
+            colors: { board: [220,179,92], line: [0,0,0], highlight: [255,0,0,100], bg_menu: [44,62,80] },
+            playerStoneColor: [10,10,10], playerSkin: 'black', playerFirst: true, humanPlayer: 1, animFrameId: null
+        };
+
+        const canvas = document.getElementById('boardCanvas');
+        const ctx = canvas.getContext('2d');
+        const turnIndicator = document.getElementById('turnIndicator');
+        const btnUndo = document.getElementById('btnUndo');
+        const gameOverOverlay = document.getElementById('gameOverOverlay');
+        const gameOverDialog = document.getElementById('gameOverDialog');
+
+        async function apiCall(url, method = 'GET', body = null) {
+            const opts = { method, headers: { 'Content-Type': 'application/json' } };
+            if (body) opts.body = JSON.stringify(body);
+            const resp = await fetch(url, opts);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            return await resp.json();
+        }
+
+        async function newGame(difficulty = STATE.difficulty, playerFirst = STATE.playerFirst) {
+            const data = await apiCall('/api/new_game', 'POST', { difficulty, player_first: playerFirst });
+            STATE.board = data.board; STATE.size = data.size; STATE.currentPlayer = data.current_player;
+            STATE.difficulty = data.difficulty; STATE.playerFirst = playerFirst;
+            STATE.humanPlayer = playerFirst ? 1 : 2;
+            STATE.gameOver = false; STATE.winningLine = []; STATE.lastMove = data.ai_first_move || null;
+            STATE.aiThinking = false; STATE.hasGame = true; STATE.animStone = null;
+            updateUI(); drawBoard();
+            if (!playerFirst && data.ai_first_move) {
+                const [ar, ac] = data.ai_first_move;
+                STATE.animStone = { row: ar, col: ac, player: 1 };
+                STATE.animProgress = 0; STATE.animStartTime = performance.now();
+                animateStone(() => { STATE.animStone = null; updateUI(); drawBoard(); });
+            }
+        }
+
+        async function makeMove(row, col) {
+            const hp = STATE.humanPlayer || 1, aiP = 3 - hp;
+            if (STATE.gameOver || STATE.aiThinking || STATE.currentPlayer !== hp) return;
+            if (row < 0 || row >= STATE.size || col < 0 || col >= STATE.size) return;
+            if (STATE.board[row][col] !== 0) return;
+            STATE.board[row][col] = hp; STATE.lastMove = [row, col]; STATE.currentPlayer = aiP;
+            STATE.aiThinking = true; updateUI(); drawBoard();
+            STATE.animStone = { row, col, player: hp };
+            STATE.animProgress = 0; STATE.animStartTime = performance.now();
+            animateStone(() => {
+                STATE.animStone = null; drawBoard();
+                apiCall('/api/move', 'POST', { row, col }).then(data => {
+                    if (!data.success) { STATE.board[row][col] = 0; STATE.currentPlayer = hp; STATE.lastMove = null; STATE.aiThinking = false; updateUI(); drawBoard(); return; }
+                    STATE.board = data.board; STATE.currentPlayer = data.current_player; STATE.gameOver = data.game_over;
+                    STATE.winningLine = data.winning_line || []; STATE.lastMove = data.last_move; STATE.aiThinking = false;
+                    if (data.ai_move) {
+                        STATE.animStone = { row: data.ai_move[0], col: data.ai_move[1], player: aiP };
+                        STATE.animProgress = 0; STATE.animStartTime = performance.now();
+                        animateStone(() => { STATE.animStone = null; updateUI(); drawBoard(); if (STATE.gameOver) showGameOver(); loadScores(); });
+                    } else { updateUI(); drawBoard(); if (STATE.gameOver) showGameOver(); loadScores(); }
+                }).catch(err => { console.error(err); STATE.board[row][col] = 0; STATE.currentPlayer = hp; STATE.lastMove = null; STATE.aiThinking = false; updateUI(); drawBoard(); });
+            });
+        }
+
+        async function undo() {
+            if (STATE.gameOver || STATE.aiThinking) return;
+            const data = await apiCall('/api/undo', 'POST');
+            if (!data.success) return;
+            STATE.board = data.board; STATE.currentPlayer = data.current_player; STATE.lastMove = data.last_move; STATE.winningLine = [];
+            updateUI(); drawBoard();
+        }
+
+        async function loadScores() { try { const data = await apiCall('/api/scores'); renderScores(data, 'scoreTableBody', 'historyList', 'streakCurrent', 'streakBest'); } catch(e) {} }
+        async function clearScores() { if (!confirm('确定清空所有战绩？')) return; await apiCall('/api/clear_scores', 'POST'); loadScores(); if (document.getElementById('statsView').classList.contains('active')) loadStatsPage(); }
+        async function loadConfig() { try { const d = await apiCall('/api/config'); STATE.cellSize = d.cell_size||60; STATE.margin = d.margin||50; STATE.colors = d.colors||STATE.colors; resizeCanvas(); drawBoard(); } catch(e) { resizeCanvas(); drawBoard(); } }
+
+        function easeOutBack(t) { const c1=1.70158,c3=c1+1; return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2); }
+        function animateStone(onComplete) {
+            function step() { const e = (performance.now()-STATE.animStartTime)/1000; STATE.animProgress=Math.min(e*6,1); drawBoard(); if(STATE.animProgress<1)STATE.animFrameId=requestAnimationFrame(step); else { STATE.animFrameId=null; if(onComplete)setTimeout(onComplete,100); } }
+            if(STATE.animFrameId)cancelAnimationFrame(STATE.animFrameId);
+            STATE.animFrameId=requestAnimationFrame(step);
+        }
+
+        function resizeCanvas() { const s=(STATE.size-1)*STATE.cellSize+2*STATE.margin; canvas.width=s; canvas.height=s; }
+        function drawBoard() {
+            const {size,cellSize,margin,colors}=STATE; resizeCanvas(); const w=canvas.width,h=canvas.height;
+            ctx.fillStyle=rgbStr(colors.board); ctx.fillRect(0,0,w,h);
+            ctx.strokeStyle=rgbStr(colors.line); ctx.lineWidth=1;
+            for(let i=0;i<size;i++){const p=margin+i*cellSize; ctx.beginPath();ctx.moveTo(margin,p);ctx.lineTo(w-margin,p);ctx.stroke(); ctx.beginPath();ctx.moveTo(p,margin);ctx.lineTo(p,h-margin);ctx.stroke();}
+            ctx.fillStyle=rgbStr(colors.line); ctx.font='bold 11px "Microsoft YaHei"'; ctx.textAlign='center';
+            const cl='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            for(let i=0;i<size;i++){ctx.fillText(cl[i],margin+i*cellSize,13);ctx.fillText(String(i+1),10,margin+i*cellSize+4);}
+            const hp=STATE.humanPlayer||1;
+            if(!STATE.gameOver&&STATE.currentPlayer===hp&&!STATE.aiThinking&&!STATE.animStone){const mc=getMouseCell();if(mc&&STATE.board&&STATE.board[mc.r][mc.c]===0){const cx=margin+mc.c*cellSize,cy=margin+mc.r*cellSize;ctx.strokeStyle='rgba(255,60,60,0.8)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(cx,cy,cellSize*.37,0,Math.PI*2);ctx.stroke();}}
+            if(STATE.board){for(let r=0;r<size;r++)for(let c=0;c<size;c++){if(STATE.board[r][c]!==0){if(STATE.animStone&&STATE.animStone.row===r&&STATE.animStone.col===c)continue;drawStone(r,c,STATE.board[r][c],1);}}}
+            if(STATE.lastMove&&!STATE.animStone&&STATE.board){const[lr,lc]=STATE.lastMove;if(STATE.board[lr][lc]!==0){const cx=margin+lc*cellSize,cy=margin+lr*cellSize;ctx.fillStyle='#ff0000';ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fill();}}
+            if(STATE.animStone){const{row,col,player}=STATE.animStone;drawStone(row,col,player,easeOutBack(Math.min(STATE.animProgress,.95)),true);}
+            if(STATE.winningLine&&STATE.winningLine.length>0){for(const[wr,wc]of STATE.winningLine){const cx=margin+wc*cellSize,cy=margin+wr*cellSize;ctx.fillStyle='rgba(255,0,0,0.35)';ctx.beginPath();ctx.arc(cx,cy,cellSize*.45,0,Math.PI*2);ctx.fill();}}
+        }
+
+        function drawStone(r, c, player, scale, isAnimating = false) {
+            const { cellSize, margin } = STATE, hp = STATE.humanPlayer || 1, aiP = 3 - hp;
+            const color = player === hp ? STATE.playerStoneColor : [245, 245, 245];
+            const cx = margin + c * cellSize, cy = margin + r * cellSize, radius = cellSize * 0.45 * scale;
+            const shadowOff = isAnimating ? 8 * (1 - scale) : 3 * scale;
+            ctx.fillStyle = 'rgba(128,128,128,0.6)'; ctx.beginPath(); ctx.arc(cx + shadowOff, cy + shadowOff, Math.max(radius * 0.9, 1), 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = rgbStr(color); ctx.beginPath(); ctx.arc(cx, cy, Math.max(radius, 1), 0, Math.PI * 2); ctx.fill();
+            const hlRad = Math.max(radius / 4, 1);
+            ctx.fillStyle = player === aiP ? 'rgba(255,255,255,0.7)' : SKIN_HIGHLIGHTS[STATE.playerSkin] || 'rgba(80,80,80,0.4)';
+            ctx.beginPath(); ctx.arc(cx - radius / 3, cy - radius / 3, hlRad, 0, Math.PI * 2); ctx.fill();
+            if (isAnimating) { const gr = cellSize * 0.5 * (1 - scale) + cellSize * 0.1; if (gr > radius) { ctx.fillStyle = player === aiP ? `rgba(255,215,0,${1-scale})` : `rgba(150,150,150,${1-scale})`; ctx.beginPath(); ctx.arc(cx, cy, gr, 0, Math.PI * 2); ctx.fill(); } }
+        }
+
+        let mousePos = { x: -100, y: -100 };
+        function getMouseCell() { const { margin, cellSize, size } = STATE, rect = canvas.getBoundingClientRect(), sx = canvas.width / rect.width, sy = canvas.height / rect.height, x = (mousePos.x - rect.left) * sx, y = (mousePos.y - rect.top) * sy, c = Math.round((x - margin) / cellSize), r = Math.round((y - margin) / cellSize); return (r >= 0 && r < size && c >= 0 && c < size) ? { r, c } : null; }
+
+        canvas.addEventListener('mousemove', e => { mousePos = { x: e.clientX, y: e.clientY }; if (!STATE.animStone && (!STATE.gameOver || !STATE.aiThinking)) drawBoard(); });
+        canvas.addEventListener('mouseleave', () => { mousePos = { x: -100, y: -100 }; if (!STATE.animStone) drawBoard(); });
+        canvas.addEventListener('click', e => { if (STATE.gameOver || STATE.aiThinking || STATE.animStone) return; const cell = getMouseCell(); if (cell) makeMove(cell.r, cell.c); });
+        canvas.addEventListener('touchstart', e => { e.preventDefault(); if (STATE.gameOver || STATE.aiThinking || STATE.animStone) return; const t = e.touches[0]; mousePos = { x: t.clientX, y: t.clientY }; const cell = getMouseCell(); if (cell) makeMove(cell.r, cell.c); });
+
+        function updateUI() {
+            const cur = STATE.currentPlayer, hp = STATE.humanPlayer || 1;
+            if (STATE.aiThinking) { turnIndicator.className = 'turn-indicator ai thinking'; turnIndicator.textContent = '⚪ AI 思考中...'; }
+            else if (cur === hp) { turnIndicator.className = 'turn-indicator player'; turnIndicator.textContent = '⚫ 玩家回合'; }
+            else { turnIndicator.className = 'turn-indicator ai'; turnIndicator.textContent = '⚪ AI 回合'; }
+            btnUndo.disabled = STATE.gameOver || STATE.aiThinking || STATE.animStone !== null;
+            canvas.className = (STATE.gameOver || STATE.aiThinking || STATE.animStone !== null) ? 'no-interact' : '';
+        }
+
+        function renderScores(data, tableId, historyId, streakCurId, streakBestId) {
+            document.getElementById(streakCurId||'streakCurrent').textContent = data.streak?.current || 0;
+            document.getElementById(streakBestId||'streakBest').textContent = data.streak?.best || 0;
+            const diffs = ['简单','中等','困难'], keys = ['easy','medium','hard'];
+            let html = ''; const stats = data.stats || {}, scores = data.scores || {};
+            for (let i = 0; i < diffs.length; i++) {
+                const diff = diffs[i], key = keys[i], s = stats[key] || { wins:0,losses:0,draws:0,total:0,win_rate:0 }, score = scores[diff] || 0;
+                html += `<tr><td>${diff}</td><td class="${score>0?'score-positive':score<0?'score-negative':'score-zero'}">${score>0?'+':''}${score}</td><td style="font-size:12px;">${s.wins}/${s.losses}/${s.draws}</td><td class="win-rate">${s.win_rate.toFixed(1)}%</td></tr>`;
+            }
+            document.getElementById(tableId||'scoreTableBody').innerHTML = html;
+            const hist = data.recent_history || [], histEl = document.getElementById(historyId||'historyList');
+            histEl.innerHTML = hist.length === 0 ? '<span style="color:var(--text-secondary);">暂无记录</span>' : hist.map(h => `<div class="history-item result-${h.result}"><span>${h.time}</span><span>[${h.difficulty}]</span><strong>${h.result}</strong></div>`).join('');
+        }
+
+        async function loadStatsPage() { try { const d = await apiCall('/api/scores'); renderScores(d, 'statsScoreTableBody', 'statsHistoryList', 'statsStreakCurrent', 'statsStreakBest'); } catch(e) {} }
+
+        function showGameOver() {
+            const hp = STATE.humanPlayer || 1, winner = STATE.gameOver ? (STATE.winningLine.length > 0 ? STATE.board[STATE.winningLine[0][0]][STATE.winningLine[0][1]] : 0) : 0;
+            let title, emoji, colorCls;
+            if (winner === hp) { emoji = '🎉'; title = '恭喜你，获得了胜利！'; colorCls = 'score-positive'; }
+            else if (winner === (3-hp)) { emoji = '🤖'; title = 'AI 赢得了比赛'; colorCls = 'score-negative'; }
+            else { emoji = '🤝'; title = '棋盘已满，平局！'; colorCls = 'score-zero'; }
+            const m = { 2:'简单',3:'一般',4:'困难' }, mc = { 2:'easy',3:'medium',4:'hard' };
+            const t = m[STATE.difficulty] || '一般', c = mc[STATE.difficulty] || 'medium';
+            gameOverDialog.innerHTML = `<div class="result-icon">${emoji}</div><h2 class="${colorCls}">${title}</h2><p>难度: <span class="difficulty-badge ${c}">${t}</span> &nbsp; ${STATE.playerFirst?'⚫玩家先行':'⚪AI先行'}</p><hr class="divider"><div class="dialog-actions"><button class="btn-success" id="btnDialogRestart">🔄 再来一局</button><button class="btn-primary" id="btnDialogMenu">🏠 返回主菜单</button></div><div class="dialog-actions" style="margin-top:8px;"><button class="btn-gold" id="btnDialogPreview">🔍 观看棋盘</button></div>`;
+            setTimeout(() => {
+                const br = document.getElementById('btnDialogRestart'), bm = document.getElementById('btnDialogMenu'), bp = document.getElementById('btnDialogPreview');
+                if (br) br.addEventListener('click', () => { gameOverOverlay.style.display = 'none'; newGame(STATE.difficulty, STATE.playerFirst); loadScores(); });
+                if (bm) bm.addEventListener('click', () => { gameOverOverlay.style.display = 'none'; showMainMenu(); });
+                if (bp) bp.addEventListener('click', showBoardPreview);
+            }, 50);
+            gameOverOverlay.style.display = 'flex';
+        }
+
+        function showBoardPreview() {
+            gameOverOverlay.style.display = 'none'; document.getElementById('boardPreviewOverlay').style.display = 'flex';
+            const pC = document.getElementById('previewCanvas'), pctx = pC.getContext('2d');
+            const { size, cellSize, margin, colors, board, winningLine } = STATE, hp = STATE.humanPlayer || 1, aiP = 3 - hp;
+            const cs = (size - 1) * cellSize + 2 * margin; pC.width = cs; pC.height = cs;
+            pctx.fillStyle = rgbStr(colors.board); pctx.fillRect(0, 0, cs, cs);
+            pctx.strokeStyle = rgbStr(colors.line); pctx.lineWidth = 1;
+            for (let i = 0; i < size; i++) { const p = margin + i * cellSize; pctx.beginPath(); pctx.moveTo(margin, p); pctx.lineTo(cs - margin, p); pctx.stroke(); pctx.beginPath(); pctx.moveTo(p, margin); pctx.lineTo(p, cs - margin); pctx.stroke(); }
+            pctx.fillStyle = rgbStr(colors.line); pctx.font = 'bold 11px "Microsoft YaHei"'; pctx.textAlign = 'center';
+            const cl = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            for (let i = 0; i < size; i++) { pctx.fillText(cl[i], margin + i * cellSize, 13); pctx.fillText(String(i + 1), 10, margin + i * cellSize + 4); }
+            if (board) for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) if (board[r][c] !== 0) drawStoneOnCtx(pctx, r, c, board[r][c], 1, cellSize, margin, hp, aiP);
+            if (STATE.lastMove && board) { const [lr, lc] = STATE.lastMove; if (board[lr][lc] !== 0) { pctx.fillStyle = '#ff0000'; pctx.beginPath(); pctx.arc(margin + lc * cellSize, margin + lr * cellSize, 4, 0, Math.PI * 2); pctx.fill(); } }
+            if (winningLine && winningLine.length > 0) for (const [wr, wc] of winningLine) { pctx.fillStyle = 'rgba(255,0,0,0.35)'; pctx.beginPath(); pctx.arc(margin + wc * cellSize, margin + wr * cellSize, cellSize * 0.45, 0, Math.PI * 2); pctx.fill(); }
+        }
+
+        function drawStoneOnCtx(pctx, r, c, player, scale, cellSize, margin, hp, aiP) {
+            const color = player === hp ? STATE.playerStoneColor : [245, 245, 245];
+            const cx = margin + c * cellSize, cy = margin + r * cellSize, radius = cellSize * 0.45 * scale;
+            pctx.fillStyle = 'rgba(128,128,128,0.6)'; pctx.beginPath(); pctx.arc(cx + 3, cy + 3, Math.max(radius * 0.9, 1), 0, Math.PI * 2); pctx.fill();
+            pctx.fillStyle = rgbStr(color); pctx.beginPath(); pctx.arc(cx, cy, Math.max(radius, 1), 0, Math.PI * 2); pctx.fill();
+            pctx.fillStyle = player === aiP ? 'rgba(255,255,255,0.7)' : SKIN_HIGHLIGHTS[STATE.playerSkin] || 'rgba(80,80,80,0.4)';
+            const hlRad = Math.max(radius / 4, 1); pctx.beginPath(); pctx.arc(cx - radius / 3, cy - radius / 3, hlRad, 0, Math.PI * 2); pctx.fill();
+        }
+
+        function restartGame() { gameOverOverlay.style.display = 'none'; newGame(STATE.difficulty, STATE.playerFirst); loadScores(); }
+        function rgbStr(arr) { if (!arr) return 'rgb(0,0,0)'; return arr.length === 3 ? `rgb(${arr[0]},${arr[1]},${arr[2]})` : `rgba(${arr[0]},${arr[1]},${arr[2]},${arr[3]/255})`; }
+
+        document.getElementById('btnNewGame').addEventListener('click', () => { if (STATE.gameOver) gameOverOverlay.style.display = 'none'; newGame(STATE.difficulty, STATE.playerFirst); loadScores(); });
+        document.getElementById('btnUndo').addEventListener('click', undo);
+        document.getElementById('btnBackToMenu').addEventListener('click', () => { gameOverOverlay.style.display = 'none'; showMainMenu(); });
+        document.getElementById('btnClearScores').addEventListener('click', clearScores);
+        document.getElementById('btnClearScores2').addEventListener('click', clearScores);
+        document.addEventListener('keydown', e => {
+            if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); undo(); }
+            else if (e.key === 'r' || e.key === 'R') { if (STATE.gameOver) { e.preventDefault(); restartGame(); } }
+            else if (e.key === 'Escape') { if (STATE.gameOver) gameOverOverlay.style.display = 'none'; else if (document.getElementById('gameView').classList.contains('active')) showMainMenu(); }
+        });
+        gameOverOverlay.addEventListener('click', e => { if (e.target === gameOverOverlay) { gameOverOverlay.style.display = 'none'; loadScores(); } });
+        document.getElementById('btnBackToResult').addEventListener('click', () => { document.getElementById('boardPreviewOverlay').style.display = 'none'; gameOverOverlay.style.display = 'flex'; });
+        document.getElementById('boardPreviewOverlay').addEventListener('click', e => { if (e.target === document.getElementById('boardPreviewOverlay')) { document.getElementById('boardPreviewOverlay').style.display = 'none'; gameOverOverlay.style.display = 'flex'; } });
+
+        async function init() { await loadConfig(); }
+        init();
+    </script>
+</body>
+</html>
