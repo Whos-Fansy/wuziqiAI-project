@@ -1,0 +1,133 @@
+{
+  "_comment": "五子棋AI 3.0 配置文件 — 修改此文件即可调参，无需改动源码",
+  "game": {
+    "board_size": 12,
+    "fps": 60
+  },
+  "ai": {
+    "difficulty": {
+      "easy": 2,
+      "medium": 3,
+      "hard": 4
+    },
+    "evaluation": {
+      "score_five": 100000,
+      "score_open_four": 50000,
+      "score_close_four": 5000,
+      "score_open_three": 5000,
+      "score_close_three": 500,
+      "score_open_two": 200,
+      "score_close_two": 50,
+      "defense_bias": 2.0,
+      "position_sigma_factor": 0.333
+    }
+  },
+  "ui": {
+    "cell_size": 60,
+    "margin": 50,
+    "font_path": "C:/Windows/Fonts/msyh.ttc",
+    "max_undo": 999999,
+    "window_caption": "12x12 五子棋博弈系统 - Alpha-Beta剪枝算法",
+    "animation_speed": 6,
+    "colors": {
+      "board": [
+        220,
+        179,
+        92
+      ],
+      "line": [
+        0,
+        0,
+        0
+      ],
+      "black_stone": [
+        10,
+        10,
+        10
+      ],
+      "white_stone": [
+        245,
+        245,
+        245
+      ],
+      "btn": [
+        52,
+        152,
+        219
+      ],
+      "btn_hover": [
+        41,
+        128,
+        185
+      ],
+      "btn_press": [
+        21,
+        93,
+        144
+      ],
+      "btn_restart": [
+        46,
+        204,
+        113
+      ],
+      "btn_restart_hover": [
+        82,
+        222,
+        151
+      ],
+      "btn_restart_press": [
+        30,
+        180,
+        90
+      ],
+      "btn_danger": [
+        231,
+        76,
+        60
+      ],
+      "btn_danger_hover": [
+        241,
+        100,
+        80
+      ],
+      "btn_danger_press": [
+        200,
+        50,
+        40
+      ],
+      "text": [
+        255,
+        255,
+        255
+      ],
+      "bg_menu": [
+        44,
+        62,
+        80
+      ],
+      "highlight": [
+        255,
+        0,
+        0,
+        100
+      ],
+      "valid_move": [
+        0,
+        255,
+        0,
+        50
+      ],
+      "shadow": [
+        128,
+        128,
+        128,
+        153
+      ]
+    }
+  },
+  "scoring": {
+    "win_score": 1,
+    "loss_score": -1,
+    "draw_score": 0
+  }
+}

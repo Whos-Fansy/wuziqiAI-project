@@ -1,0 +1,56 @@
+{
+  "easy": -4,
+  "medium": -1,
+  "hard": 0,
+  "stats": {
+    "easy": {
+      "wins": 0,
+      "losses": 4,
+      "draws": 0
+    },
+    "medium": {
+      "wins": 0,
+      "losses": 1,
+      "draws": 0
+    },
+    "hard": {
+      "wins": 0,
+      "losses": 0,
+      "draws": 0
+    }
+  },
+  "streak": 0,
+  "best_streak": 0,
+  "history": [
+    {
+      "time": "2026-06-09 21:57:44",
+      "difficulty": "中等",
+      "result": "负",
+      "score": -1
+    },
+    {
+      "time": "2026-06-09 23:27:39",
+      "difficulty": "简单",
+      "result": "负",
+      "score": -1
+    },
+    {
+      "time": "2026-06-09 23:43:09",
+      "difficulty": "简单",
+      "result": "负",
+      "score": -1
+    },
+    {
+      "time": "2026-06-09 23:46:46",
+      "difficulty": "简单",
+      "result": "负",
+      "score": -1
+    },
+    {
+      "time": "2026-06-09 23:52:47",
+      "difficulty": "简单",
+      "result": "负",
+      "score": -1
+    }
+  ]
+}
